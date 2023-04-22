@@ -1,49 +1,51 @@
-pragma solidity >=0.4.22 <=0.8.17;
+pragma solidity ^0.8.0;
 
-contract GreedyBanker {
+contract GreedyBanker{
+    uint constant fee = 1000 wei;
+
+    mapping(address => uint) balances;
+    mapping(address => uint) public depositCount;
+
+    uint public feesCollected;
 
     address owner;
-    uint totalDeposits;
-    mapping(address => uint) userBalance;
-    mapping(address => bool) hasUserUsedFreeDeposit;
 
-    constructor(){
+    constructor() {
         owner = msg.sender;
     }
 
     receive() external payable {
-        
-        if (!hasUserUsedFreeDeposit[msg.sender]){
-            userBalance[msg.sender] = msg.value;
-            hasUserUsedFreeDeposit[msg.sender] = true;
+        uint depositFee;
+        if (depositCount[msg.sender] >= 1){
+            require(msg.value >= fee, "Deposit Failed");
+            depositFee = fee;
         }
-        else{
-            require(msg.value > 1000 wei, "Deposit Failed");
-            userBalance[msg.sender] += msg.value;
-            userBalance[msg.sender] -= 1000 wei;
-        }
-        totalDeposits += msg.value;
+        balances[msg.sender] += msg.value;
+        balances[msg.sender] -= depositFee;
+        depositCount[msg.sender]++;
+        feesCollected += depositFee;
     }
 
     fallback() external payable {
-        totalDeposits += msg.value;
+        feesCollected += msg.value;
     }
 
     function withdraw(uint amount) external {
-        require(amount <= userBalance[msg.sender], "You have insufficent funds");
-        userBalance[msg.sender] -= amount;
+        require(balances[msg.sender] >= amount,"Insufficient Funds");
+        balances[msg.sender] -= amount;
         (bool sent,) = payable(msg.sender).call{value:amount}("");
-        require(sent, "withdraw failed");
+        require(sent, "Payment Failed");
     }
 
     function collectFees() external {
-        require(msg.sender == owner, "You are not the owner");
-        uint feesCollected = totalDeposits;
-        totalDeposits = 0;
-        (bool sent,) = payable(owner).call{value:feesCollected}("");
+        require(owner == msg.sender, "You are not the owner");
+        uint totalFees = feesCollected;
+        feesCollected = 0;
+        (bool sent,) = payable(owner).call{value:totalFees}("");
         require(sent, "transfer failed");
     }
+
     function getBalance() public view returns(uint){
-        return userBalance[msg.sender];
+        return balances[msg.sender];
     }
 }
