@@ -1,0 +1,73 @@
+pragma solidity ^0.8.0;
+
+contract EtherMath {
+    int256 sum;
+    address[] submittedSolution;
+    int256[] usableNumbers;
+    address owner;
+    uint256 reward;
+    mapping(address => uint256) unclaimedRewards;
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    function verifySolution(int[] memory solution) internal view returns(bool){
+        int256 solutionSum;
+        for (uint idx = 0; idx < solution.length; idx++){
+            bool isNumberExisting;
+            for(uint j = 0; j < usableNumbers.length; j++){
+                if (solution[idx] == usableNumbers[j]){
+                    isNumberExisting = true;
+                }
+            }
+            if (!isNumberExisting){
+                return false;
+            }
+            solutionSum += solution[idx];
+        }
+        return solutionSum == sum;
+    }
+
+    function userSubmittedSolution(address user) internal view returns(bool){
+        for(uint i = 0; i < submittedSolution.length; i++){
+            address currentUser = submittedSolution[i];
+            if (currentUser == user){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function submitChallenge(int256[] memory array, int256 targetSum)
+        public
+        payable
+    {
+        require(owner == msg.sender, "You are not the owner");
+        require(reward == 0, "Challenge is active");
+        require(msg.value > 0 ether, "You cannot send zero ethers");
+        reward = msg.value;
+        sum = targetSum;
+        usableNumbers = array;
+    }
+
+    function submitSolution(int256[] memory solution) public {
+        require(reward != 0, "The challenge is still active");
+        require(!userSubmittedSolution(msg.sender), "User has already submitted the solution");
+        submittedSolution.push(msg.sender);
+        if (verifySolution(solution)){
+            unclaimedRewards[msg.sender] += reward;
+            reward = 0;
+            sum = 0;
+            delete submittedSolution;
+            delete usableNumbers;
+        }
+    }
+
+    function claimRewards() public {
+        uint256 amount = unclaimedRewards[msg.sender];
+        unclaimedRewards[msg.sender] = 0;
+        (bool sent,) = payable(msg.sender).call{value:amount}("");
+        require(sent, "Payment failed");
+    }
+}
