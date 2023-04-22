@@ -1,0 +1,49 @@
+pragma solidity >=0.4.22 <=0.8.17;
+
+contract GreedyBanker {
+
+    address owner;
+    uint totalDeposits;
+    mapping(address => uint) userBalance;
+    mapping(address => bool) hasUserUsedFreeDeposit;
+
+    constructor(){
+        owner = msg.sender;
+    }
+
+    receive() external payable {
+        
+        if (!hasUserUsedFreeDeposit[msg.sender]){
+            userBalance[msg.sender] = msg.value;
+            hasUserUsedFreeDeposit[msg.sender] = true;
+        }
+        else{
+            require(msg.value > 1000 wei, "Deposit Failed");
+            userBalance[msg.sender] += msg.value;
+            userBalance[msg.sender] -= 1000 wei;
+        }
+        totalDeposits += msg.value;
+    }
+
+    fallback() external payable {
+        totalDeposits += msg.value;
+    }
+
+    function withdraw(uint amount) external {
+        require(amount <= userBalance[msg.sender], "You have insufficent funds");
+        userBalance[msg.sender] -= amount;
+        (bool sent,) = payable(msg.sender).call{value:amount}("");
+        require(sent, "withdraw failed");
+    }
+
+    function collectFees() external {
+        require(msg.sender == owner, "You are not the owner");
+        uint feesCollected = totalDeposits;
+        totalDeposits = 0;
+        (bool sent,) = payable(owner).call{value:feesCollected}("");
+        require(sent, "transfer failed");
+    }
+    function getBalance() public view returns(uint){
+        return userBalance[msg.sender];
+    }
+}
