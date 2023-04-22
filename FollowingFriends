@@ -1,0 +1,31 @@
+pragma solidity ^0.8.0;
+
+contract Following {
+
+    error cannotAddMoreUsers();
+    address sender;
+    uint public countOfUsers;
+    mapping (address => addresses) following;
+    struct addresses{
+        address[] addressNames;
+    }
+    constructor() {
+        sender = msg.sender;
+    }
+
+    function follow(address toFollow) external {
+        require(msg.sender != sender, "You cannot follow your own address");
+        following[sender].addressNames.push(toFollow);
+        countOfUsers++;
+        if (countOfUsers > 3){
+            revert cannotAddMoreUsers();
+        }
+    }
+
+    function getFollowing(address addr) public view returns(address[] memory) {
+        return following[addr].addressNames;
+    }
+
+    function clearFollowing() public {
+        delete following[msg.sender].addressNames;
+    }
