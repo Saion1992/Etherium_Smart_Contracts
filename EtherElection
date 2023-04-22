@@ -1,0 +1,73 @@
+pragma solidity ^0.8.0;
+
+contract EtherElection{
+    address owner;
+    address winner;
+    uint256 count;
+    bool withdrew;
+    address[] enrolledCandidates;
+    mapping(address => bool) hasUserVoted;
+    mapping(address => uint) voteForFavoriteCandidate;
+    mapping(address => uint) NumberOfVotes;
+
+    constructor(){
+        owner = msg.sender;
+    }
+
+    function enroll() public payable{
+        require(count < 3, "candidates have already been chosen");
+        require(msg.value == 1 ether, "You can only send 1 ether");
+        require(!verifyCandidate(msg.sender), "The candidate is already enrolled");
+        enrolledCandidates.push(msg.sender);
+        count++;  
+    }
+
+    function vote(address candidate) public payable {
+        require(NumberOfVotes[candidate] < 5, "The candidate has received max number of votes");
+        require(!hasUserVoted[msg.sender], "User has already voted");
+        require(msg.value == 10000 wei, "You need to send 10000 wei");
+        require(winner == address(0), "The voting has ended");
+        if (verifyCandidate(candidate)){
+            voteForFavoriteCandidate[candidate] += msg.value;
+            NumberOfVotes[candidate]++;
+            hasUserVoted[msg.sender] = true;
+
+            if (NumberOfVotes[candidate] == 5){
+                winner = candidate;
+            }
+        }
+        else{
+            revert("The address you chose is not a valid candidate");
+        }
+    }
+
+    function verifyCandidate(address candidate) internal view returns(bool){
+        for (uint i = 0; i < enrolledCandidates.length; i++){
+            address currentCandidate = enrolledCandidates[i];
+            if (currentCandidate == candidate){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function getWinner() public view returns(address){
+        require(winner != address(0), "The Winner is not yet decided");
+        return winner;
+    }
+
+    function claimReward() public {
+        require(winner != address(0), "The Winner is not yet decided");
+        require(msg.sender == winner, "You are not the winner");
+        require(!withdrew, "Winner has still not received the reward");
+        (bool sent,) = payable(winner).call{value:3 ether}("");
+        require(sent, "Payment failed");
+        withdrew = true;
+    }
+
+    function collectFees() public {
+        require(withdrew, "The winner has not yet withdrawn the amount");
+        require(msg.sender == owner, "You are not the owner");
+        selfdestruct(payable(owner));
+    }
+}
