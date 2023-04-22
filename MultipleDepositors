@@ -1,0 +1,74 @@
+pragma solidity ^0.8.0;
+
+contract Competitors {
+    address depositor1;
+    address depositor2;
+    address maxDepositor;
+    address owner;
+
+    uint depositor1Deposited;
+    uint depositor2Deposited;
+    bool withdrew;
+
+    constructor() {
+        owner = msg.sender;
+    }
+    
+    function deposit() external payable {
+        require(msg.value == 1 ether, "You can only send exactly 1 ether");
+        require(
+            depositor1Deposited + depositor2Deposited < 3 ether, "3 etherium has been received, no more deposits accepeted"
+        );
+
+        if (depositor1 == address(0)){
+            depositor1 = msg.sender;
+        }
+        else if (depositor2 == address(0)){
+            depositor2 = msg.sender;
+        }
+
+        if (msg.sender == depositor1){
+            depositor1Deposited += msg.value;
+        }
+
+        else if (msg.sender == depositor2){
+            depositor2Deposited += msg.value;
+        }
+        else{
+            revert("You are not one of the valid depositors");
+        }
+
+        if (depositor1Deposited + depositor2Deposited >= 3 ether){
+            if (depositor1Deposited > depositor2Deposited){
+                maxDepositor = depositor1;
+            }
+            else{
+               maxDepositor =  depositor2;
+            }
+        }
+
+    }
+
+    function withdraw() external {
+        require(
+            depositor1Deposited + depositor2Deposited >= 3 ether, "You are yet to receive ethers into your account"
+        );
+
+        require(
+            msg.sender == maxDepositor, "You are not the one having max deposit"
+
+        );
+        payable(maxDepositor).call{value:3 ether}("");
+        withdrew = true;
+    }
+
+    function destroy() external {
+        require(
+            msg.sender == owner, "You are not owner"
+        );
+        require(withdrew == true, "maxDepositor has not yet withdrew their funds");
+        selfdestruct(payable(owner));
+
+    } 
+    
+}
