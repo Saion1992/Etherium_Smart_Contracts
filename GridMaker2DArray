@@ -1,0 +1,35 @@
+pragma solidity ^0.8.0;
+
+contract GridMaker {
+    int[][] array;
+    function make2DIntGrid(
+        uint256 rows,
+        uint256 cols,
+        int256 value
+    ) public returns (int256[][] memory) {
+        array = new int[][](rows);
+        for(uint i = 0; i < array.length; i++){
+            array[i] = new int[](cols);
+            for(uint j = 0; j < array[i].length; j++){
+                array[i][j] = value;
+            }
+        }
+        return array;
+    }
+
+    function make2DAddressGrid(uint256 rows, uint256 cols)
+        public
+        view
+        returns (address[][] memory)
+    {
+        address[][] memory addressArray;
+        addressArray = new address[][](rows);
+        for(uint i = 0; i < addressArray.length; i++){
+            addressArray[i] = new address[](cols);
+            for(uint j = 0; j < addressArray[i].length; j++){
+                addressArray[i][j] = msg.sender;
+            }
+        }
+        return addressArray;
+    }
+}
