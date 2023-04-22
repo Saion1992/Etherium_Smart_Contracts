@@ -1,0 +1,19 @@
+pragma solidity ^0.8.0;
+
+
+
+contract Balances {
+    mapping(address => uint) received;
+
+    function getAmountSent(address addr) public view returns(uint){
+        return received[addr];
+    }
+    
+    receive() external payable{
+        received[msg.sender] += msg.value;
+    }
+
+    fallback() external payable{
+        received[msg.sender] += msg.value;
+    }
+}
