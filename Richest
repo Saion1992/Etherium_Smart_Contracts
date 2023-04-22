@@ -1,0 +1,33 @@
+pragma solidity >=0.4.22 <=0.8.17;
+
+contract Richest {
+    
+    uint mostSent;
+    address richest;
+    mapping(address => uint) pendingWithdrawl;
+
+    function becomeRichest() external payable returns(bool){
+        if (msg.value <= mostSent){
+            return false;
+
+        }
+        else{
+            pendingWithdrawl[richest] += mostSent;
+            richest = msg.sender;
+            mostSent = msg.value;
+            return true;
+        }
+
+    }
+    function withdraw() external {
+        uint amount = pendingWithdrawl[msg.sender];
+        pendingWithdrawl[msg.sender] = 0;
+        (bool sent,) = payable(msg.sender).call{value:amount}("");
+        require(sent);
+    }
+
+    function getRichest() public view returns(address){
+        return richest;
+    }
+    
+}
