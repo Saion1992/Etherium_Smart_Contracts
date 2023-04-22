@@ -1,0 +1,17 @@
+pragma solidity >=0.4.22 <=0.8.17;
+
+contract StringGenerator {
+    string existingString;
+    mapping(address => bool) public hasAddedCharacter;
+    function addCharacter(string memory character) public {
+        require(bytes(character).length == 1 , "You cannot add more than 1 char");
+        require(bytes(existingString).length < 5, "You have reached max limit");
+        require(!hasAddedCharacter[msg.sender], "You already have added the char");
+        existingString = string.concat(existingString, character);
+        hasAddedCharacter[msg.sender] = true;
+    }
+
+    function getString() public view returns (string memory) {
+        return existingString;
+    }
+}
