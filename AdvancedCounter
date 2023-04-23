@@ -1,0 +1,39 @@
+pragma solidity >=0.4.22 <=0.8.17;
+
+contract AdvancedCounter {
+    mapping(address => mapping(string => int256)) counts;
+    mapping(address => mapping(string => bool)) idMapped;
+    mapping(address => uint256) userCount;
+
+    function createCounter(string memory id, int256 value) public {
+        require(userCount[msg.sender] < 3, "max 3 counters allowed");
+        require(!idMapped[msg.sender][id], "id is mapped to this address");
+        require(bytes(id).length == 1, "Should be a single character each time");
+        idMapped[msg.sender][id] = true;
+        counts[msg.sender][id] = value;
+        userCount[msg.sender]++;
+    }
+    
+    function deleteCounter(string memory id) public {
+        require(idMapped[msg.sender][id], "id doesn't exists for this address");
+        idMapped[msg.sender][id] = false;
+        counts[msg.sender][id] = 0;
+        userCount[msg.sender]--;
+    }
+
+    function incrementCounter(string memory id) public {
+        require(idMapped[msg.sender][id], "id doesn't exists");
+        counts[msg.sender][id]++;
+    }
+
+    function decrementCounter(string memory id) public {
+        require(idMapped[msg.sender][id], "id doesn't exists");
+        counts[msg.sender][id]--;
+    }
+
+    function getCount(string memory id) public view returns(int256){
+        require(idMapped[msg.sender][id], "id doesn't exists");
+        return counts[msg.sender][id];
+    }
+
+}
