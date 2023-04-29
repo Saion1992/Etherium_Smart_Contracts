@@ -1,0 +1,47 @@
+pragma solidity ^0.8.0;
+
+contract TimedAuction {
+    uint bidTime;
+    address owner;
+    mapping(address => uint) public withDrawOldBids;
+    uint highestBid;
+    address highestBidder;
+    uint totalWithdrableBids;
+    event Bid(address indexed sender, uint amount, uint timestamp);
+
+
+
+    constructor() {
+        bidTime = block.timestamp + 5 minutes;
+        owner = msg.sender;
+    }
+
+    function bid() external payable {
+        require(block.timestamp < bidTime, "The auction is over");
+        require(msg.value > highestBid, "You cannot bid lesser amount");
+        withDrawOldBids[highestBidder] += highestBid;
+        totalWithdrableBids += highestBid;
+        highestBid = msg.value;
+        highestBidder = msg.sender;
+        emit Bid(highestBidder, highestBid, block.timestamp);
+    }
+
+    function withdraw() public {
+        uint amountToBeWithdrawn = withDrawOldBids[msg.sender];
+        withDrawOldBids[msg.sender] = 0;
+        totalWithdrableBids -= amountToBeWithdrawn;
+        (bool sent, ) = payable(msg.sender).call{value:amountToBeWithdrawn}("");
+        require(sent, "Transfer failed");
+    }
+
+    function claim() public {
+        require(msg.sender == owner, "You are not the owner of this contract");
+        require(block.timestamp > bidTime, "The auction is not yet over");
+        require(totalWithdrableBids == 0, "Users are yet to withdraw old bids");
+        selfdestruct(payable(owner));
+    }
+
+    function getHighestBidder() public view returns(address){
+        return highestBidder;
+    }
+}
