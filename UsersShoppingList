@@ -1,0 +1,53 @@
+pragma solidity ^0.8.0;
+
+contract ShoppingList {
+
+    mapping(address => Users) users;
+
+    struct Users {
+        mapping (string => List) lists;
+        string[] listNames;
+    }
+
+    struct List {
+        string name;
+        Item[] items;
+    }
+
+    struct Item {
+        string name;
+        uint quantity;
+    }
+
+    function listExists(string memory name) internal view returns(bool) {
+        return bytes(users[msg.sender].lists[name].name).length != 0;
+    }
+
+    function createList(string memory name) public {
+        require(!listExists(name), "A list with this name already exists");
+        require(bytes(name).length > 0, "The name can't be empty");
+        users[msg.sender].lists[name].name = name;
+        users[msg.sender].listNames.push(name);
+    }
+
+    function getListNames() public view returns(string[] memory) {
+        return users[msg.sender].listNames;
+    }
+
+    function addItem(string memory listName, string memory itemName, uint itemQuantity) public {
+        require(listExists(listName), "No lists with this name exists");
+        users[msg.sender].lists[listName].items.push(Item(itemName, itemQuantity));
+
+    }
+
+    function getItemNames(string memory listName) public view returns(string[] memory){
+        require(listExists(listName), "No lists with this name exists");
+        uint numName = users[msg.sender].lists[listName].items.length;
+        string[] memory itemNames = new string[](numName);
+
+        for(uint i=0; i < numName; i++){
+            itemNames[i] = users[msg.sender].lists[listName].items[i].name;
+        }
+        return itemNames;
+    }
+} 
